@@ -1,27 +1,33 @@
-N = 20480; n = [0 : N-1];
-x = 0.08 * cos(2*pi * 490 * n/N) + ...
- cos(2*pi * 516 * n/N) + ...
- cos(2*pi * 523.6 * n/N) + ...
- 0.003 * cos(2*pi * 600 * n/N); 
-% FFT con ventana rectangular
-Mr = (2/N) * abs(fft(x));
-% FFT con ventana Hamming
-xm = x .* hamming(N)';
-M = mean(hamming(N)); % factor de atenuación de la ventana
-Mm = (1/M) * (2/N) * abs(fft(xm));
-% FFT con ventana Hanning
-xn = x .* hanning(N)';
-M = mean(hanning(N)); % factor de atenuación de la ventana
-Mn = (1/M) * (2/N) * abs(fft(xn));
-% FFT con ventana Blackman
-xb = x .* blackman(N)';
-M = mean(blackman(N)); % factor de atenuación de la ventana
-Mb = (1/M) * (2/N) * abs(fft(xb));
-subplot 221; k = [0 : N-1]; semilogy(k, Mr); axis([400 650 0.001 1]);
-grid; title('Rectangular'); ylabel('Mag')
-subplot 222; semilogy(k, Mm); axis([400 650 0.001 1]);
-grid; title('Hamming'); ylabel('Mag')
-subplot 223; semilogy(k, Mn); axis([400 650 0.001 1]);
-grid; title('Hanning'); xlabel('k'); ylabel('Mag')
-subplot 224; semilogy(k, Mb); axis([400 650 0.001 1]);
-grid; title('Blackman'); xlabel('k'); ylabel('Mag') 
+% Datos
+fc = 200; % frecuencia de corte en [Hz]
+Fs = 1000; % frec. de muestreo en [Hz]
+N = 30; % longitud de la respuesta impulso
+f1 = 0; % frec. mínima para el cálculo de la respuesta de frec.
+f2 = 500; % frec. máxima para el cálculo de la respuesta de frec.
+m1 = 1e-6; % límite inferior del gráfico de magnitud
+% Diseña el filtro
+wn = 2 * fc / Fs; 
+b = fir1(N-1, wn,'bandpass',hanning(N));
+t = fir1(N-1, wn,'bandpass',hamming(N));
+k = fir1(N-1, wn,'bandpass',kaiser(N,10));
+
+h = b'; save 'h.txt' h -ascii
+f = [f1 : (f2-f1)/1023 : f2];
+H = freqz(b, 1, f, Fs);
+n = [1 : N]; subplot 141; stem(n, b); grid; xlabel('n'); title('h(n) ')
+subplot 142; semilogy(f, abs(H)); grid
+axis([f1 f2 m1 1.1]); xlabel('f[Hz]'); title('Mag(H)Hanning')
+
+h = t'; save 'h.txt' h -ascii
+fA = [f1 : (f2-f1)/1023 : f2];
+Hx = freqz(t, 1, fA, Fs);
+n = [1 : N]; 
+subplot 143; semilogy(fA, abs(Hx)); grid
+axis([f1 f2 m1 1.1]); xlabel('f[Hz]'); title('Mag(H) Hamming')
+
+h = k'; save 'h.txt' h -ascii
+fC = [f1 : (f2-f1)/1023 : f2];
+H = freqz(k, 1, fC, Fs);
+n = [1 : N]; 
+subplot 144; semilogy(fC, abs(H)); grid
+axis([f1 f2 m1 1.1]); xlabel('f[Hz]'); title('Mag(H) Kaiser') 
